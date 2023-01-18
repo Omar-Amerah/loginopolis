@@ -1,11 +1,16 @@
 const express = require('express');
 const app = express();
-const { User } = require('./db');
+const { User, Book } = require('./db');
 
 app.use(express.json());
 app.use(express.urlencoded({extended:true}));
-const bcrypt = require('bcrypt')
+const bcrypt = require('bcrypt');
+
 const SALT_COUNT =5
+
+  Book.hasOne(User)
+  User.belongsTo(Book)
+
 
 app.get('/', async (req, res, next) => {
   try {
@@ -62,6 +67,33 @@ app.post('/login', async (req, res, next) => {
   next(error)
 }
 })
+
+
+app.get('/me', async (req, res, next) => {
+  try{
+    console.log(req.body)
+    const user = await req.body.username
+    const pass = await req.body.password
+    const userfound = await User.findOne({where: { username: user}})
+    if(!userfound)
+    {
+      res.send(`User not found`)
+      return
+    }
+    const isMatch = await bcrypt.compare(pass, userfound.password)
+      if(!isMatch)
+      {
+        res.send('incorrect username or password').sendStatus(401)
+        return
+      }
+      const booktitle = await Book.findByPk(userfound.bookId)
+      res.send(`${user}'s book: ${booktitle.title}`).sendStatus(200)    
+  }
+ catch (error) {
+  console.error(error);
+  next(error)
+}
+});
 
 
 // we export the app, not listening in here, so that we can run tests
