@@ -26,7 +26,7 @@ app.post('/register', async (req, res, next) => {
     const pass = await req.body.password
     const hashedpass = await bcrypt.hash(pass, SALT_COUNT)
     User.create({username: user, password: hashedpass})
-    res.sendStatus(200)
+    res.send(`successfully created user ${user}`).sendStatus(200)
   }
  catch (error) {
   console.error(error);
@@ -43,8 +43,19 @@ app.post('/login', async (req, res, next) => {
     console.log(req.body)
     const user = await req.body.username
     const pass = await req.body.password
-    User.findOne({where: { username: user, password: pass }})
-    res.sendStatus(200)
+    const userfound = await User.findOne({where: { username: user}})
+    if(!userfound)
+    {
+      res.send(`User not found`)
+      return
+    }
+    const isMatch = await bcrypt.compare(pass, userfound.password)
+      if(!isMatch)
+      {
+        res.send('incorrect username or password').sendStatus(401)
+        return
+      }
+      res.send(`successfully logged in user ${user}`).sendStatus(200)    
   }
  catch (error) {
   console.error(error);
